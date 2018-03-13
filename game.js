@@ -88,6 +88,8 @@ function canvasApp(){
 	const enemySpawnRate = 0.2;
 	var enemySpawnTimer = 0.0;
 
+	var gameOver = false;
+
 	function drawEnvironment() {
 		context.save();
 
@@ -144,6 +146,9 @@ function canvasApp(){
 	}
 
 	function mouseDownFunction(e) {
+		if (gameOver) {
+			return;
+		}
 		var x = e.pageX - 50;
 		var y = e.pageY - 50;
 		if (canShoot && x > 0 && x < theCanvas.width && y > 0 && y < theCanvas.height && y < playerY) {
@@ -154,6 +159,9 @@ function canvasApp(){
 	}
 
 	function doKeyDown(e) {
+		if (gameOver) {
+			return;
+		}
 		if (e.keyCode == 65 && playerX > 20) {
 			// A
 			playerX -= 10.0;
@@ -251,15 +259,40 @@ function canvasApp(){
 		return result;
 	}
 
-	function detectCollisions() {
-		// Detect for player hit
-		// TODO
+	function playerHit(enemy) {
+		var enemyMinX = enemy.posX - (enemy.sizeX / 2);
+		var enemyMaxX = enemyMinX + enemy.sizeX;
+		var enemyMinY = enemy.posY - (enemy.sizeY / 2);
+		var enemyMaxY = enemyMinY + enemy.sizeY;
 
-		// Detect for enemy hit by shot
+		var playerMinX = playerX - 15;
+		var playerMaxX = playerMinX + 30;
+		var playerMinY = playerY - 15;
+		var playerMaxY = playerMinY + 30;
+
+		var result = false;
+
+		if (enemyMinX > playerMaxX || playerMinX > enemyMaxX || enemyMinY > playerMaxY || playerMinY > enemyMaxY) {
+			result = false;
+		}
+		else {
+			result = true;
+		}
+
+		return result;
+
+	}
+
+	function detectCollisions() {
 		var curEnemy;
 		var curShot;
 		enemy: for (var count = enemies.length - 1; count >= 0; count--) {
 			curEnemy = enemies[count];
+			if (playerHit(curEnemy)) {
+				// TODO
+				gameOver = true;
+				return;
+			}
 			for (var shotCount = shots.length - 1; shotCount >= 0; shotCount--) {
 				curShot = shots[shotCount];
 				if (collision(curEnemy, curShot)) {
@@ -269,6 +302,12 @@ function canvasApp(){
 				}
 			}
 		}
+	}
+
+	function gameOverFunction() {
+		context.fillStyle = "black";
+		context.font="45px Arial";
+		context.fillText("GAME OVER", theCanvas.width / 3, theCanvas.height / 2);
 	}
 
 	function gameLoop() {
@@ -286,7 +325,12 @@ function canvasApp(){
 
 		drawPieces();
 
-		window.setTimeout(gameLoop, 1);
+		if (!gameOver) {
+			window.setTimeout(gameLoop, 1);
+		}
+		else {
+			gameOverFunction();
+		}
 	}
 
 	gameLoop();
