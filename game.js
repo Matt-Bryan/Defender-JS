@@ -139,7 +139,7 @@ function canvasApp(){
 	function shootAt(destX, destY) {
 		var speedVector = (new Vector2(destX - playerX, -(destY - playerY))).normalize();
 
-		var newShot = new Shot(playerX, playerY - 20, speedVector.x * shotSpeed, speedVector.y * shotSpeed);
+		var newShot = new Shot(playerX, playerY - 20, speedVector.x * shotSpeed, speedVector.y * shotSpeed, 10, 10);
 		shots.push(newShot);
 	}
 
@@ -187,7 +187,7 @@ function canvasApp(){
 		enemySpawnTimer += enemySpawnRate;
 		if (enemySpawnTimer >= enemySpawnTrigger) {
 			enemySpawnTimer = 0.0;
-			var newEnemy = new Enemy(theCanvas.width / 2, 50, enemySpeed);
+			var newEnemy = new Enemy(theCanvas.width / 2, 50, enemySpeed, 60, 60);
 			enemies.push(newEnemy);
 		}
 	}
@@ -205,7 +205,7 @@ function canvasApp(){
 
 			context.beginPath();
 
-			context.fillRect(curShot.posX - 5, curShot.posY - 5, 10, 10);
+			context.fillRect(curShot.posX - 5, curShot.posY - 5, curShot.sizeX, curShot.sizeY);
 
 			context.stroke();
 		}
@@ -220,7 +220,7 @@ function canvasApp(){
 
 			context.beginPath();
 
-			context.fillRect(curEnemy.posX - 30, curEnemy.posY - 30, 60, 60);
+			context.fillRect(curEnemy.posX - 30, curEnemy.posY - 30, curEnemy.sizeX, curEnemy.sizeY);
 
 			context.stroke();
 		}
@@ -228,9 +228,48 @@ function canvasApp(){
 		context.restore();
 	}
 
-	// function detectCollisions() {
+	function collision(enemy, shot) {
+		var enemyMinX = enemy.posX - (enemy.sizeX / 2);
+		var enemyMaxX = enemyMinX + enemy.sizeX;
+		var enemyMinY = enemy.posY - (enemy.sizeY / 2);
+		var enemyMaxY = enemyMinY + enemy.sizeY;
 
-	// }
+		var shotMinX = shot.posX - (shot.sizeX / 2);
+		var shotMaxX = shotMinX + shot.sizeX;
+		var shotMinY = shot.posY - (shot.sizeY / 2);
+		var shotMaxY = shotMinY + shot.sizeY;
+
+		var result = false;
+
+		if (enemyMinX > shotMaxX || shotMinX > enemyMaxX || enemyMinY > shotMaxY || shotMinY > enemyMaxY) {
+			result = false;
+		}
+		else {
+			result = true;
+		}
+
+		return result;
+	}
+
+	function detectCollisions() {
+		// Detect for player hit
+		// TODO
+
+		// Detect for enemy hit by shot
+		var curEnemy;
+		var curShot;
+		enemy: for (var count = enemies.length - 1; count >= 0; count--) {
+			curEnemy = enemies[count];
+			for (var shotCount = shots.length - 1; shotCount >= 0; shotCount--) {
+				curShot = shots[shotCount];
+				if (collision(curEnemy, curShot)) {
+					enemies.splice(count, 1);
+					shots.splice(shotCount, 1);
+					break enemy;
+				}
+			}
+		}
+	}
 
 	function gameLoop() {
 		clearScreen();
@@ -243,7 +282,7 @@ function canvasApp(){
 
 		movePieces();
 
-		//detectCollisions();
+		detectCollisions();
 
 		drawPieces();
 
