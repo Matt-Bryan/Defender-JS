@@ -10,11 +10,13 @@ function canvasSupport () {
 }
 
 class Shot {
- 	constructor(posX, posY, speedX, speedY) {
+ 	constructor(posX, posY, speedX, speedY, sizeX, sizeY) {
  		this.posX = posX;
  		this.posY = posY;
  		this.speedX = speedX;	// Per frame movement in X
  		this.speedY = speedY;	// Per frame movement in Y
+ 		this.sizeX = sizeX;
+		this.sizeY = sizeY;
  	}
 
  	move() {
@@ -35,23 +37,26 @@ class Vector2 {
  	}
 }
 
-/*class Enemy {
-	constructor(posX, posY, speed) {
+class Enemy {
+	constructor(posX, posY, speed, sizeX, sizeY) {
 		this.posX = posX;
 		this.posY = posY;
 		this.speed = speed;
+		this.sizeX = sizeX;
+		this.sizeY = sizeY;
 	}
 
 	move(playerX, playerY) {
 		var difX = playerX - this.posX;
-		var difY = -(playerY - this.posY);
+		var difY = playerY - this.posY;
 		var movementVec = new Vector2(difX, difY);
 		movementVec = movementVec.normalize();
-		movementVec *= speed;
+		movementVec.x *= this.speed;
+		movementVec.y *= this.speed;
 		this.posX += movementVec.x;
 		this.posY += movementVec.y;
 	}
-}*/
+}
 
 function canvasApp(){
 	window.addEventListener("mousedown", mouseDownFunction, false);
@@ -79,6 +84,9 @@ function canvasApp(){
 	const shotSpeed = 1.5;
 	const cooldown = 500;	// Shot CD in ms
 	const enemySpeed = 1.0;
+	const enemySpawnTrigger = 100;
+	const enemySpawnRate = 0.2;
+	var enemySpawnTimer = 0.0;
 
 	function drawEnvironment() {
 		context.save();
@@ -168,18 +176,30 @@ function canvasApp(){
 				shots.splice(count, 1);
 			}
 		}
+
+		// Move enemies
+		for (var count = enemies.length - 1; count >= 0; count--) {
+			enemies[count].move(playerX, playerY);
+		}
 	}
 
-	// function spawnEnemies() {
-
-	// }
+	function spawnEnemies() {
+		enemySpawnTimer += enemySpawnRate;
+		if (enemySpawnTimer >= enemySpawnTrigger) {
+			enemySpawnTimer = 0.0;
+			var newEnemy = new Enemy(theCanvas.width / 2, 50, enemySpeed);
+			enemies.push(newEnemy);
+		}
+	}
 
 	function drawPieces() {
 		// Draw shots
 		var curShot;
 
 		context.save();
+
 		context.fillStyle = "black";
+
 		for (var count = 0; count < shots.length; count++) {
 			curShot = shots[count];
 
@@ -189,8 +209,28 @@ function canvasApp(){
 
 			context.stroke();
 		}
+
+		// Draw enemies
+		var curEnemy;
+
+		context.fillStyle = "red";
+
+		for (var count = 0; count < enemies.length; count++) {
+			curEnemy = enemies[count];
+
+			context.beginPath();
+
+			context.fillRect(curEnemy.posX - 30, curEnemy.posY - 30, 60, 60);
+
+			context.stroke();
+		}
+
 		context.restore();
 	}
+
+	// function detectCollisions() {
+
+	// }
 
 	function gameLoop() {
 		clearScreen();
@@ -199,7 +239,7 @@ function canvasApp(){
 
 		drawPlayer();
 
-		//spawnEnemies();
+		spawnEnemies();
 
 		movePieces();
 
