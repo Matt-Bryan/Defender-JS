@@ -33,10 +33,29 @@ class Vector2 {
  	normalize() {
  		return new Vector2(this.x / this.magnitude, this.y / this.magnitude);
  	}
- }
+}
+
+/*class Enemy {
+	constructor(posX, posY, speed) {
+		this.posX = posX;
+		this.posY = posY;
+		this.speed = speed;
+	}
+
+	move(playerX, playerY) {
+		var difX = playerX - this.posX;
+		var difY = -(playerY - this.posY);
+		var movementVec = new Vector2(difX, difY);
+		movementVec = movementVec.normalize();
+		movementVec *= speed;
+		this.posX += movementVec.x;
+		this.posY += movementVec.y;
+	}
+}*/
 
 function canvasApp(){
 	window.addEventListener("mousedown", mouseDownFunction, false);
+	window.addEventListener("keydown", doKeyDown, true);
 
 	if (!canvasSupport()) {
 			 return;
@@ -53,9 +72,13 @@ function canvasApp(){
 	}
 
 	var playerX = theCanvas.width / 2;
-	const playerY = theCanvas.height - theCanvas.height / 10;
+	const playerY = theCanvas.height - theCanvas.height / 9;
+	var canShoot = true;
 	var shots = [];
-	const shotSpeed = 0.7;
+	var enemies = [];
+	const shotSpeed = 1.5;
+	const cooldown = 500;	// Shot CD in ms
+	const enemySpeed = 1.0;
 
 	function drawEnvironment() {
 		context.save();
@@ -94,11 +117,15 @@ function canvasApp(){
 
 		context.beginPath();
 
-		context.fillRect(playerX - 15, theCanvas.height - (theCanvas.height / 10) - 15, 30, 30);
+		context.fillRect(playerX - 15, playerY - 15, 30, 30);
 
 		context.stroke();
 
 		context.restore();
+	}
+
+	function shotCD() {
+		canShoot = true;
 	}
 
 	function shootAt(destX, destY) {
@@ -106,14 +133,26 @@ function canvasApp(){
 
 		var newShot = new Shot(playerX, playerY - 20, speedVector.x * shotSpeed, speedVector.y * shotSpeed);
 		shots.push(newShot);
-		console.log(shots);
 	}
 
 	function mouseDownFunction(e) {
 		var x = e.pageX - 50;
 		var y = e.pageY - 50;
-		if (x > 0 && x < theCanvas.width && y > 0 && y < theCanvas.height) {
+		if (canShoot && x > 0 && x < theCanvas.width && y > 0 && y < theCanvas.height && y < playerY) {
 			shootAt(x, y);
+			canShoot = false;
+			setTimeout(shotCD, cooldown);
+		}
+	}
+
+	function doKeyDown(e) {
+		if (e.keyCode == 65 && playerX > 20) {
+			// A
+			playerX -= 10.0;
+		}
+		else if (e.keyCode == 68 && playerX < theCanvas.width - 20) {
+			// D
+			playerX += 10.0;
 		}
 	}
 
@@ -130,6 +169,10 @@ function canvasApp(){
 			}
 		}
 	}
+
+	// function spawnEnemies() {
+
+	// }
 
 	function drawPieces() {
 		// Draw shots
@@ -155,6 +198,8 @@ function canvasApp(){
 		drawEnvironment();
 
 		drawPlayer();
+
+		//spawnEnemies();
 
 		movePieces();
 
