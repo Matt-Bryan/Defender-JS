@@ -77,16 +77,46 @@ function canvasApp(){
 	}
 
 	var playerX = theCanvas.width / 2;
-	const playerY = theCanvas.height - theCanvas.height / 9;
+	var playerY = theCanvas.height - theCanvas.height / 9;
+
 	var canShoot = true;
 	var shots = [];
-	var enemies = [];
 	const shotSpeed = 1.5;
-	const cooldown = 500;	// Shot CD in ms
+	const cooldown = 400;	// Shot CD in ms
+
+	var enemies = [];
 	const enemySpeed = 1.0;
-	const enemySpawnTrigger = 100;
+	var enemySpawnTrigger = 100;
 	const enemySpawnRate = 0.2;
 	var enemySpawnTimer = 0.0;
+	var totalEnemiesSpawned = 0;
+	var level = 0;
+	const levelSpawnArray = [70, 60, 50, 40, 30, 25, 20, 15, 10];
+
+	var score = 0;
+
+	var screenIsFlipped = false;
+	var flipTimer = 0.0;
+	var flipTrigger = 300;	// Initialized to 300 for first 3 enemies
+	var flipRate = 0.1;
+
+	var audioContext = new AudioContext();
+	var MAX_SOUNDS = 9;
+	var soundPool = new Array();
+	var SOUND_HIT =  "hit";
+	var SOUND_FLIP 	=  "flip";
+	var SOUND_SHOOT = "shoot";
+	var SOUND_GAME_OVER = "gameOver";
+	var hitSound ;
+	var hitSound2 ;
+	var hitSound3 ;
+	var flipSound;
+	var flipSound2;
+	var flipSound3;
+	var shootSound;
+	var shootSound2;
+	var shootSound3;
+	var gameOverSound;
 
 	var gameOver = false;
 
@@ -114,7 +144,23 @@ function canvasApp(){
 
 		context.beginPath();
 
-		context.fillRect(2, theCanvas.height - (theCanvas.height / 5), theCanvas.width - 4, theCanvas.height / 5 - 2);
+		if (screenIsFlipped) {
+			context.fillRect(2, 2, theCanvas.width - 4, theCanvas.height / 5 - 2);
+		}
+		else {
+			context.fillRect(2, theCanvas.height - (theCanvas.height / 5), theCanvas.width - 4, theCanvas.height / 5 - 2);
+		}
+		context.restore();
+	}
+
+	function drawHUD() {
+		context.save();
+
+		context.fillStyle = "black";
+
+		context.font = "25px Arial";
+
+		context.fillText("Score: " + score, theCanvas.width / 2 - 50, theCanvas.height - 10);
 
 		context.restore();
 	}
@@ -134,6 +180,142 @@ function canvasApp(){
 		context.restore();
 	}
 
+	function itemLoaded(event) {
+		flipSound.removeEventListener("canplaythrough",itemLoaded, false);
+		flipSound2.removeEventListener("canplaythrough",itemLoaded, false);
+		flipSound3.removeEventListener("canplaythrough",itemLoaded, false);
+		hitSound.removeEventListener("canplaythrough",itemLoaded,false);
+		hitSound2.removeEventListener("canplaythrough",itemLoaded,false);
+		hitSound3.removeEventListener("canplaythrough",itemLoaded,false);
+		shootSound.removeEventListener("canplaythrough",itemLoaded,false);
+		shootSound2.removeEventListener("canplaythrough",itemLoaded,false);
+		shootSound3.removeEventListener("canplaythrough",itemLoaded,false);
+		soundPool.push({name:"hit", element:hitSound, played:false});
+		soundPool.push({name:"hit", element:hitSound2, played:false});
+		soundPool.push({name:"hit", element:hitSound3, played:false});
+		soundPool.push({name:"flip", element:flipSound, played:false});
+		soundPool.push({name:"flip", element:flipSound2, played:false});
+		soundPool.push({name:"flip", element:flipSound3, played:false});
+		soundPool.push({name:"shoot", element:shootSound, played:false});
+		soundPool.push({name:"shoot", element:shootSound2, played:false});
+		soundPool.push({name:"shoot", element:shootSound3, played:false});
+	}
+
+	function initSounds() {
+		var tempSound = document.createElement("audio");
+		document.body.appendChild(tempSound);
+
+		hitSound = document.createElement("audio");
+		document.body.appendChild(hitSound);
+		hitSound.addEventListener("canplaythrough",itemLoaded,false);
+		hitSound.setAttribute("src", "hit.mp3");
+		
+		
+		hitSound2 = document.createElement("audio");
+		document.body.appendChild(hitSound2);
+		hitSound2.addEventListener("canplaythrough",itemLoaded,false);
+		hitSound2.setAttribute("src", "hit.mp3");
+		
+		
+		hitSound3 = document.createElement("audio");
+		document.body.appendChild(hitSound3);
+		hitSound3.addEventListener("canplaythrough",itemLoaded,false);
+		hitSound3.setAttribute("src", "hit.mp3");
+		
+		
+		
+		
+		flipSound = document.createElement("audio");
+		document.body.appendChild(flipSound);
+		flipSound.addEventListener("canplaythrough",itemLoaded,false);
+		flipSound.setAttribute("src", "flip.mp3");
+		
+		
+		flipSound2 = document.createElement("audio");
+		document.body.appendChild(flipSound2);
+		flipSound2.addEventListener("canplaythrough",itemLoaded,false);
+		flipSound2.setAttribute("src", "flip.mp3");
+		
+		
+		flipSound3 = document.createElement("audio");
+		document.body.appendChild(flipSound3);
+		flipSound3.addEventListener("canplaythrough",itemLoaded,false);
+		flipSound3.setAttribute("src", "flip.mp3");
+
+
+
+
+		shootSound = document.createElement("audio");
+		document.body.appendChild(shootSound);
+		shootSound.addEventListener("canplaythrough",itemLoaded,false);
+		shootSound.setAttribute("src", "shoot.mp3");
+		
+		
+		shootSound2 = document.createElement("audio");
+		document.body.appendChild(shootSound2);
+		shootSound2.addEventListener("canplaythrough",itemLoaded,false);
+		shootSound2.setAttribute("src", "shoot.mp3");
+		
+		
+		shootSound3 = document.createElement("audio");
+		document.body.appendChild(shootSound3);
+		shootSound3.addEventListener("canplaythrough",itemLoaded,false);
+		shootSound3.setAttribute("src", "shoot.mp3");
+
+
+
+
+
+		gameOverSound = document.createElement("audio");
+		document.body.appendChild(gameOverSound);
+		gameOverSound.addEventListener("canplaythrough",itemLoaded,false);
+		gameOverSound.setAttribute("src", "gameOver.mp3");
+
+
+		playSound(SOUND_HIT,0);
+		playSound(SOUND_FLIP,0);
+		playSound(SOUND_SHOOT, 0);
+		playSound(SOUND_GAME_OVER, 0);
+
+	}
+
+	function playSound(sound,volume) {
+
+		if (gameOver && sound != SOUND_GAME_OVER) {
+			return;
+		}
+	
+		var soundFound = false;
+		var soundIndex = 0;
+		var tempSound;
+		
+		if (soundPool.length > 0) {
+			while (!soundFound && soundIndex < soundPool.length) {
+			
+				var tSound = soundPool[soundIndex];
+				if ((tSound.element.ended || !tSound.played) && tSound.name == sound) {
+					soundFound = true;
+					tSound.played = true;
+				} else {
+					soundIndex++;
+				}
+		
+			}
+		}
+		if (soundFound) {
+			tempSound = soundPool[soundIndex].element;
+			tempSound.volume = volume;
+			tempSound.play();
+			
+		} else if (soundPool.length < MAX_SOUNDS){
+			tempSound = document.createElement("audio");
+			tempSound.setAttribute("src", sound + ".mp3");
+			tempSound.volume = volume;
+			tempSound.play();
+			soundPool.push({name:sound, element:tempSound, played:true});
+		}
+	}
+
 	function shotCD() {
 		canShoot = true;
 	}
@@ -151,10 +333,17 @@ function canvasApp(){
 		}
 		var x = e.pageX - 50;
 		var y = e.pageY - 50;
-		if (canShoot && x > 0 && x < theCanvas.width && y > 0 && y < theCanvas.height && y < playerY) {
+		if (canShoot && x > 0 && x < theCanvas.width && y > 0 && y < theCanvas.height) {
 			shootAt(x, y);
+			playSound(SOUND_SHOOT, 0.5);
 			canShoot = false;
 			setTimeout(shotCD, cooldown);
+		}
+	}
+
+	function flipEnemies() {
+		for (var count = 0; count < enemies.length; count++) {
+			enemies[count].posY = ((theCanvas.height + 100) - (enemies[count].posY + 50)) - 50;
 		}
 	}
 
@@ -169,6 +358,11 @@ function canvasApp(){
 		else if (e.keyCode == 68 && playerX < theCanvas.width - 20) {
 			// D
 			playerX += 10.0;
+		}
+		else if (e.keyCode == 46) {
+			// DEBUG SCREENFLIP (DELETE KEY)
+			screenIsFlipped = !screenIsFlipped;
+			flipEnemies();
 		}
 	}
 
@@ -191,12 +385,30 @@ function canvasApp(){
 		}
 	}
 
+	function getRandomInt(min, max) {
+	    return Math.floor(Math.random() * (max - min + 1)) + min;
+	}
+
 	function spawnEnemies() {
+		var newEnemy;
+
 		enemySpawnTimer += enemySpawnRate;
 		if (enemySpawnTimer >= enemySpawnTrigger) {
 			enemySpawnTimer = 0.0;
-			var newEnemy = new Enemy(theCanvas.width / 2, 50, enemySpeed, 60, 60);
+			if (screenIsFlipped) {
+				newEnemy = new Enemy(getRandomInt(50, theCanvas.width - 10), theCanvas.height + 50, enemySpeed, 60, 60);
+			}
+			else {
+				newEnemy = new Enemy(getRandomInt(50, theCanvas.width - 10), -50, enemySpeed, 60, 60);
+			}
 			enemies.push(newEnemy);
+			totalEnemiesSpawned++;
+			if (totalEnemiesSpawned >= levelSpawnArray[levelSpawnArray.length - level - 1]) {
+				if (level < levelSpawnArray.length - 1) {
+					level++;
+				}
+				enemySpawnTrigger = levelSpawnArray[level];
+			}
 		}
 	}
 
@@ -289,8 +501,8 @@ function canvasApp(){
 		enemy: for (var count = enemies.length - 1; count >= 0; count--) {
 			curEnemy = enemies[count];
 			if (playerHit(curEnemy)) {
-				// TODO
 				gameOver = true;
+				playSound(SOUND_GAME_OVER, 0.5);
 				return;
 			}
 			for (var shotCount = shots.length - 1; shotCount >= 0; shotCount--) {
@@ -298,9 +510,29 @@ function canvasApp(){
 				if (collision(curEnemy, curShot)) {
 					enemies.splice(count, 1);
 					shots.splice(shotCount, 1);
+					playSound(SOUND_HIT, 0.5);
+					score += 10;
 					break enemy;
 				}
 			}
+		}
+	}
+
+	function handleFlip() {
+		flipTimer += flipRate;
+		if (flipTimer >= flipTrigger) {
+			screenIsFlipped = !screenIsFlipped;
+			flipTimer = 0.0;
+			flipTrigger = getRandomInt(50, 300);
+			playSound(SOUND_FLIP, 0.5);
+			flipEnemies();
+		}
+
+		if (screenIsFlipped) {
+			playerY = theCanvas.height / 9;
+		}
+		else {
+			playerY = theCanvas.height - theCanvas.height / 9;
 		}
 	}
 
@@ -311,9 +543,13 @@ function canvasApp(){
 	}
 
 	function gameLoop() {
+		handleFlip();
+
 		clearScreen();
 
 		drawEnvironment();
+
+		drawHUD();
 
 		drawPlayer();
 
