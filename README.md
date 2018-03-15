@@ -1,3 +1,3 @@
-CSC 378 - Program 3
+A simple 2D game made in Javascript.
 
-Youtube Video Demo: TBD 
+Shoot the incoming red squares. They will spawn faster and faster. The screen will flip randomly.
